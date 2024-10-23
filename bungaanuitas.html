@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator: Bunga & Anuitas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            width: 55%;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        table th {
+            background-color: #d3f9d8;
+        }
+        table td {
+            background-color: #f3fff3;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+        input[type="text"], select {
+            width: calc(100% - 220px);
+            padding: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #e9ffe9;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Calculator Bunga & Anuitas</h1>
+    <div class="container">
+        <div class="input-group">
+            <label for="principal">Jumlah Pinjaman (P):</label>
+            <input type="text" id="principal" placeholder="Masukkan jumlah pinjaman">
+        </div>
+
+        <div class="input-group">
+            <label for="rate">Tingkat Bunga (% per tahun):</label>
+            <input type="text" id="rate" placeholder="Masukkan tingkat bunga">
+        </div>
+
+        <div class="input-group">
+            <label for="time">Jangka Waktu (tahun):</label>
+            <input type="text" id="time" placeholder="Masukkan jangka waktu dalam tahun">
+        </div>
+
+        <div class="input-group">
+            <label for="frequency">Frekuensi Pembayaran:</label>
+            <select id="frequency">
+                <option value="1">Tahunan</option>
+                <option value="2">Semesteran</option>
+                <option value="4">Triwulanan</option>
+            </select>
+        </div>
+
+        <button onclick="calculate()">Hitung</button>
+
+        <div class="result" id="result"></div>
+
+    </div>
+
+    <script>
+        // Fungsi untuk memformat angka ke dalam format Rupiah
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR' 
+            }).format(amount);
+        }
+
+        function calculate() {
+            const principal = parseFloat(document.getElementById("principal").value);
+            const rate = parseFloat(document.getElementById("rate").value) / 100;
+            const time = parseFloat(document.getElementById("time").value);
+            const frequency = parseInt(document.getElementById("frequency").value);
+
+            // Menghitung durasi dalam periode yang dipilih
+            const periods = time * frequency;
+            const ratePerPeriod = rate / frequency;
+
+            // Bunga Tunggal
+            const bungaTunggal = principal * rate * time;
+            const mtTunggal = principal + bungaTunggal;
+
+            // Bunga Majemuk
+            const compoundInterest = principal * Math.pow((1 + rate), periods);
+
+            // Menghitung anuitas (Angsuran Tetap)
+            const annuity = (principal * ratePerPeriod) / (1 - Math.pow(1 + ratePerPeriod, -periods));
+
+            // Tabel untuk pembayaran anuitas per periode
+            let annuityTable = `
+                <table>
+                    <tr>
+                        <th>Periode Ke-</th>
+                        <th>Pinjaman Awal</th>
+                        <th>Bunga (B)</th>
+                        <th>Angsuran (a)</th>
+                        <th>Sisa Pinjaman</th>
+                    </tr>`;
+            
+            let remainingLoan = principal;
+            for (let i = 1; i <= periods; i++) {
+                const interest = remainingLoan * ratePerPeriod;
+                const principalPayment = annuity - interest;  // Rumus angsuran
+                const loanStart = remainingLoan;
+                remainingLoan -= principalPayment;
+
+                annuityTable += `
+                    <tr>
+                        <td>${i}</td>
+                        <td>${formatRupiah(loanStart.toFixed(2))}</td>
+                        <td>${formatRupiah(interest.toFixed(2))}</td>
+                        <td>${formatRupiah(principalPayment.toFixed(2))}</td>
+                        <td>${formatRupiah(remainingLoan.toFixed(2))}</td>
+                    </tr>`;
+            }
+            annuityTable += '</table>';
+
+            // Menampilkan hasil
+            document.getElementById("result").innerHTML = `
+                <h3>Hasil Perhitungan:</h3>
+                <h4>-Bunga Tunggal-</h4>
+                <p><strong>Modal Awal:</strong> ${formatRupiah(principal)}</p>
+                <p><strong>Bunga:</strong> ${formatRupiah(bungaTunggal.toFixed(2))}</p>
+                <p><strong>Modal Akhir Bunga Tunggal:</strong> ${formatRupiah(mtTunggal.toFixed(2))}</p>
+                <hr>
+                <h4>-Bunga Majemuk-</h4>
+                <p><strong>Modal Awal:</strong> ${formatRupiah(principal)}</p>
+                <p><strong>Modal Akhir:</strong> ${formatRupiah(compoundInterest.toFixed(2))}</p>
+                <hr>
+                <p><strong>Anuitas:</strong> ${formatRupiah(annuity.toFixed(2))}</p>
+                <h3>Tabel Rencana Angsuran:</h3>
+                ${annuityTable}
+            `;
+        }
+    </script>
+    
+</body>
+</html>
